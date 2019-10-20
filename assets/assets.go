@@ -20,8 +20,8 @@ package assets
 //go:generate go fmt ./frpc/statik/statik.go
 
 import (
-	statik2 "github.com/fatedier/frp/assets/frpc/statik"
-	"github.com/fatedier/frp/assets/frps/statik"
+	statik2 "github.com/fatedier/frp_0290/assets/frpc/statik"
+	"github.com/fatedier/frp_0290/assets/frps/statik"
 	"io/ioutil"
 	"net/http"
 	"os"

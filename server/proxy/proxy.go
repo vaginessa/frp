@@ -21,12 +21,12 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/fatedier/frp/models/config"
-	"github.com/fatedier/frp/models/msg"
-	"github.com/fatedier/frp/server/controller"
-	"github.com/fatedier/frp/server/stats"
-	"github.com/fatedier/frp/utils/log"
-	frpNet "github.com/fatedier/frp/utils/net"
+	"github.com/fatedier/frp_0290/models/config"
+	"github.com/fatedier/frp_0290/models/msg"
+	"github.com/fatedier/frp_0290/server/controller"
+	"github.com/fatedier/frp_0290/server/stats"
+	"github.com/fatedier/frp_0290/utils/log"
+	frpNet "github.com/fatedier/frp_0290/utils/net"
 
 	frpIo "github.com/fatedier/golib/io"
 )

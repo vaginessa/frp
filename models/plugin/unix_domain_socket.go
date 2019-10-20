@@ -19,7 +19,7 @@ import (
 	"io"
 	"net"
 
-	frpNet "github.com/fatedier/frp/utils/net"
+	frpNet "github.com/fatedier/frp_0290/utils/net"
 
 	frpIo "github.com/fatedier/golib/io"
 )

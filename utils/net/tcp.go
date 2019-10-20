@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/fatedier/frp/utils/log"
+	"github.com/fatedier/frp_0290/utils/log"
 )
 
 type TcpListener struct {

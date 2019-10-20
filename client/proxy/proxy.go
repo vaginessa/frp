@@ -25,12 +25,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/fatedier/frp/models/config"
-	"github.com/fatedier/frp/models/msg"
-	"github.com/fatedier/frp/models/plugin"
-	"github.com/fatedier/frp/models/proto/udp"
-	"github.com/fatedier/frp/utils/log"
-	frpNet "github.com/fatedier/frp/utils/net"
+	"github.com/fatedier/frp_0290/models/config"
+	"github.com/fatedier/frp_0290/models/msg"
+	"github.com/fatedier/frp_0290/models/plugin"
+	"github.com/fatedier/frp_0290/models/proto/udp"
+	"github.com/fatedier/frp_0290/utils/log"
+	frpNet "github.com/fatedier/frp_0290/utils/net"
 
 	"github.com/fatedier/golib/errors"
 	frpIo "github.com/fatedier/golib/io"

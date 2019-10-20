@@ -20,7 +20,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/fatedier/frp/server/ports"
+	"github.com/fatedier/frp_0290/server/ports"
 
 	gerr "github.com/fatedier/golib/errors"
 )

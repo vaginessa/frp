@@ -20,7 +20,7 @@ import (
 	"net"
 	"sync"
 
-	frpNet "github.com/fatedier/frp/utils/net"
+	frpNet "github.com/fatedier/frp_0290/utils/net"
 
 	"github.com/fatedier/golib/errors"
 )

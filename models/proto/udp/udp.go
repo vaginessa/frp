@@ -20,7 +20,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/fatedier/frp/models/msg"
+	"github.com/fatedier/frp_0290/models/msg"
 
 	"github.com/fatedier/golib/errors"
 	"github.com/fatedier/golib/pool"
