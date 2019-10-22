@@ -23,7 +23,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/fatedier/frp/utils/log"
+	"github.com/fatedier/frp_0282/utils/log"
 
 	gnet "github.com/fatedier/golib/net"
 	kcp "github.com/fatedier/kcp-go"

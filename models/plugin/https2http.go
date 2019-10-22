@@ -21,7 +21,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 
-	frpNet "github.com/fatedier/frp/utils/net"
+	frpNet "github.com/fatedier/frp_0282/utils/net"
 )
 
 const PluginHTTPS2HTTP = "https2http"

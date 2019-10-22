@@ -21,7 +21,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/fatedier/frp/utils/log"
+	"github.com/fatedier/frp_0282/utils/log"
 
 	"github.com/fatedier/golib/pool"
 )

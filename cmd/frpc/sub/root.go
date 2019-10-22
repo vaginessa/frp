@@ -27,11 +27,11 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/fatedier/frp/client"
-	"github.com/fatedier/frp/g"
-	"github.com/fatedier/frp/models/config"
-	"github.com/fatedier/frp/utils/log"
-	"github.com/fatedier/frp/utils/version"
+	"github.com/fatedier/frp_0282/client"
+	"github.com/fatedier/frp_0282/g"
+	"github.com/fatedier/frp_0282/models/config"
+	"github.com/fatedier/frp_0282/utils/log"
+	"github.com/fatedier/frp_0282/utils/version"
 	"github.com/fatedier/golib/crypto"
 )
 

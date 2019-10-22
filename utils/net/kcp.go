@@ -19,7 +19,7 @@ import (
 	"net"
 	"strings"
 
-	"github.com/fatedier/frp/utils/log"
+	"github.com/fatedier/frp_0282/utils/log"
 
 	kcp "github.com/fatedier/kcp-go"
 )

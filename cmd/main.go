@@ -6,7 +6,7 @@ import (
 
 	_ "net/http/pprof"
 
-	"github.com/fatedier/frp/cmd/frp"
+	"github.com/fatedier/frp_0282/cmd/frp"
 )
 
 func main() {
