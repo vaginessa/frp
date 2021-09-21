@@ -30,6 +30,7 @@ import (
 	"github.com/fatedier/frp/pkg/config"
 	"github.com/fatedier/frp/pkg/util/log"
 	"github.com/fatedier/frp/pkg/util/version"
+	"github.com/fatedier/golib/crypto"
 
 	"github.com/spf13/cobra"
 )
@@ -114,10 +115,63 @@ var rootCmd = &cobra.Command{
 	},
 }
 
+// if cmd model
+var cmd bool
+
+var service *client.Service
+
 func Execute() {
+	cmd = true
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
+}
+
+func RunFrpc(cfgFilePath string) (err error) {
+	cmd = false
+	crypto.DefaultSalt = "frp"
+	return runClient(cfgFilePath)
+}
+
+func NewService(cfgFilePath string) (ser *client.Service, err error) {
+	cmd = false
+	crypto.DefaultSalt = "frp"
+	return returnClient(cfgFilePath, false)
+}
+
+func returnClient(cfgFilePath string, run bool) (svr *client.Service, err error) {
+	var content string
+	content, err = config.GetRenderedConfFromFile(cfgFilePath)
+	if err != nil {
+		return
+	}
+
+	cfg, err := parseClientCommonCfg(CfgFileTypeIni, content)
+	if err != nil {
+		return
+	}
+
+	pxyCfgs, visitorCfgs, err := config.LoadAllConfFromIni(cfg.User, content, cfg.Start)
+	if err != nil {
+		return nil, err
+	}
+
+	return returnService(cfg, pxyCfgs, visitorCfgs, cfgFile)
+}
+
+func StopFrp() (err error) {
+	if service == nil {
+		return fmt.Errorf("frp not start")
+	}
+
+	service.Close()
+	log.Info("frpc is stoped")
+	service = nil
+	return
+}
+
+func IsFrpRunning() bool {
+	return service != nil && !service.IsClosed()
 }
 
 func handleSignal(svr *client.Service) {
@@ -240,15 +294,45 @@ func startService(
 		err = errRet
 		return
 	}
+	service = svr
 
 	// Capture the exit signal if we use kcp.
 	if cfg.Protocol == "kcp" {
 		go handleSignal(svr)
 	}
 
-	err = svr.Run()
+	err = svr.Run(cmd)
 	if cfg.Protocol == "kcp" {
 		<-kcpDoneCh
 	}
 	return
+}
+
+func returnService(cfg config.ClientCommonConf, pxyCfgs map[string]config.ProxyConf, visitorCfgs map[string]config.VisitorConf, cfgFile string) (svr *client.Service, err error) {
+	log.InitLog(cfg.LogWay, cfg.LogFile, cfg.LogLevel, cfg.LogMaxDays, cfg.DisableLogColor)
+	if cfg.DNSServer != "" {
+		s := cfg.DNSServer
+		if !strings.Contains(s, ":") {
+			s += ":53"
+		}
+		// Change default dns server for frpc
+		net.DefaultResolver = &net.Resolver{
+			PreferGo: true,
+			Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
+				return net.Dial("udp", s)
+			},
+		}
+	}
+	svr, errRet := client.NewService(cfg, pxyCfgs, visitorCfgs, cfgFile)
+	if errRet != nil {
+		err = errRet
+		return
+	}
+
+	// Capture the exit signal if we use kcp.
+	if cfg.Protocol == "kcp" {
+		go handleSignal(svr)
+	}
+
+	return svr, err
 }

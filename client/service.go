@@ -38,6 +38,10 @@ import (
 	fmux "github.com/hashicorp/yamux"
 )
 
+type ServiceClosedListener interface {
+	OnClosed(msg string)
+}
+
 // Service is a client service.
 type Service struct {
 	// uniq id got from frps, attach it in loginMsg
@@ -68,6 +72,21 @@ type Service struct {
 	ctx context.Context
 	// call cancel to stop service
 	cancel context.CancelFunc
+
+	closed           bool
+	ReConnectByCount bool
+	reConnectCount   int
+	onClosedListener ServiceClosedListener
+}
+
+func (svr *Service) SetProxyFailedFunc(proxyFailedFunc func(err error)) {
+	if svr.ctl != nil {
+		svr.ctl.ProxyFunc = proxyFailedFunc
+	}
+}
+
+func (svr *Service) SetOnCloseListener(listener ServiceClosedListener) {
+	svr.onClosedListener = listener
 }
 
 func NewService(cfg config.ClientCommonConf, pxyCfgs map[string]config.ProxyConf, visitorCfgs map[string]config.VisitorConf, cfgFile string) (svr *Service, err error) {
@@ -92,10 +111,10 @@ func (svr *Service) GetController() *Control {
 	return svr.ctl
 }
 
-func (svr *Service) Run() error {
+func (svr *Service) Run(isCmd bool) error {
 	xl := xlog.FromContextSafe(svr.ctx)
 
-	// login to frps
+	// first login
 	for {
 		conn, session, err := svr.login()
 		if err != nil {
@@ -122,7 +141,7 @@ func (svr *Service) Run() error {
 
 	if svr.cfg.AdminPort != 0 {
 		// Init admin server assets
-		err := assets.Load(svr.cfg.AssetsDir)
+		err := assets.Load(svr.cfg.AssetsDir, assets.Frpc)
 		if err != nil {
 			return fmt.Errorf("Load assets error: %v", err)
 		}
@@ -133,7 +152,23 @@ func (svr *Service) Run() error {
 		}
 		log.Info("admin server listen on %s:%d", svr.cfg.AdminAddr, svr.cfg.AdminPort)
 	}
-	<-svr.ctx.Done()
+
+	svr.closed = false
+	if isCmd {
+		<-svr.ctx.Done()
+		svr.closed = true
+		log.Info("svr closed")
+	} else {
+		go func() {
+			<-svr.ctx.Done()
+			svr.closed = true
+			log.Info("svr closed")
+
+			if svr.onClosedListener != nil {
+				svr.onClosedListener.OnClosed("")
+			}
+		}()
+	}
 	return nil
 }
 
@@ -180,6 +215,13 @@ func (svr *Service) keepControllerWorking() {
 				if delayTime > maxDelayTime {
 					delayTime = maxDelayTime
 				}
+				if svr.ReConnectByCount {
+					svr.reConnectCount++
+					if svr.reConnectCount == 3 {
+						svr.Close()
+						return
+					}
+				}
 				continue
 			}
 			// reconnect success, init delayTime
@@ -216,13 +258,13 @@ func (svr *Service) login() (conn net.Conn, session *fmux.Session, err error) {
 		}
 	}
 	conn, err = frpNet.ConnectServerByProxyWithTLS(svr.cfg.HTTPProxy, svr.cfg.Protocol,
-		fmt.Sprintf("%s:%d", svr.cfg.ServerAddr, svr.cfg.ServerPort), tlsConfig)
+		newAddress(svr.cfg.ServerAddr, svr.cfg.ServerPort), tlsConfig)
 	if err != nil {
 		return
 	}
 
 	defer func() {
-		if err != nil {
+		if err != nil && conn != nil {
 			conn.Close()
 			if session != nil {
 				session.Close()
@@ -301,7 +343,12 @@ func (svr *Service) ReloadConf(pxyCfgs map[string]config.ProxyConf, visitorCfgs 
 func (svr *Service) Close() {
 	atomic.StoreUint32(&svr.exit, 1)
 	if svr.ctl != nil {
-		svr.ctl.Close()
+		_ = svr.ctl.Close()
 	}
 	svr.cancel()
+	svr.ctl = nil
+}
+
+func (svr *Service) IsClosed() bool {
+	return svr.closed
 }

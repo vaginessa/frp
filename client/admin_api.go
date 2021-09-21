@@ -117,52 +117,60 @@ func NewProxyStatusResp(status *proxy.WorkingStatus, serverAddr string) ProxySta
 	switch cfg := status.Cfg.(type) {
 	case *config.TCPProxyConf:
 		if cfg.LocalPort != 0 {
-			psr.LocalAddr = fmt.Sprintf("%s:%d", cfg.LocalIP, cfg.LocalPort)
+			psr.LocalAddr = newAddress(cfg.LocalIP, cfg.LocalPort)
 		}
 		psr.Plugin = cfg.Plugin
 		if status.Err != "" {
-			psr.RemoteAddr = fmt.Sprintf("%s:%d", serverAddr, cfg.RemotePort)
+			psr.RemoteAddr = newAddress(serverAddr, cfg.RemotePort)
 		} else {
 			psr.RemoteAddr = serverAddr + status.RemoteAddr
 		}
 	case *config.UDPProxyConf:
 		if cfg.LocalPort != 0 {
-			psr.LocalAddr = fmt.Sprintf("%s:%d", cfg.LocalIP, cfg.LocalPort)
+			psr.LocalAddr = newAddress(cfg.LocalIP, cfg.LocalPort)
 		}
 		if status.Err != "" {
-			psr.RemoteAddr = fmt.Sprintf("%s:%d", serverAddr, cfg.RemotePort)
+			psr.RemoteAddr = newAddress(serverAddr, cfg.RemotePort)
 		} else {
 			psr.RemoteAddr = serverAddr + status.RemoteAddr
 		}
 	case *config.HTTPProxyConf:
 		if cfg.LocalPort != 0 {
-			psr.LocalAddr = fmt.Sprintf("%s:%d", cfg.LocalIP, cfg.LocalPort)
+			psr.LocalAddr = newAddress(cfg.LocalIP, cfg.LocalPort)
 		}
 		psr.Plugin = cfg.Plugin
 		psr.RemoteAddr = status.RemoteAddr
 	case *config.HTTPSProxyConf:
 		if cfg.LocalPort != 0 {
-			psr.LocalAddr = fmt.Sprintf("%s:%d", cfg.LocalIP, cfg.LocalPort)
+			psr.LocalAddr = newAddress(cfg.LocalIP, cfg.LocalPort)
 		}
 		psr.Plugin = cfg.Plugin
 		psr.RemoteAddr = status.RemoteAddr
 	case *config.STCPProxyConf:
 		if cfg.LocalPort != 0 {
-			psr.LocalAddr = fmt.Sprintf("%s:%d", cfg.LocalIP, cfg.LocalPort)
+			psr.LocalAddr = newAddress(cfg.LocalIP, cfg.LocalPort)
 		}
 		psr.Plugin = cfg.Plugin
 	case *config.XTCPProxyConf:
 		if cfg.LocalPort != 0 {
-			psr.LocalAddr = fmt.Sprintf("%s:%d", cfg.LocalIP, cfg.LocalPort)
+			psr.LocalAddr = newAddress(cfg.LocalIP, cfg.LocalPort)
 		}
 		psr.Plugin = cfg.Plugin
 	case *config.SUDPProxyConf:
 		if cfg.LocalPort != 0 {
-			psr.LocalAddr = fmt.Sprintf("%s:%d", cfg.LocalIP, cfg.LocalPort)
+			psr.LocalAddr = newAddress(cfg.LocalIP, cfg.LocalPort)
 		}
 		psr.Plugin = cfg.Plugin
 	}
 	return psr
+}
+
+func newAddress(addr string, port int) string {
+	if strings.Contains(addr, ".") {
+		return fmt.Sprintf("%s:%d", addr, port)
+	} else {
+		return fmt.Sprintf("[%s]:%d", addr, port)
+	}
 }
 
 // GET api/status

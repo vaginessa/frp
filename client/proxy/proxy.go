@@ -292,6 +292,14 @@ func (pxy *XTCPProxy) Close() {
 	}
 }
 
+func newAddress(addr string, port int) string {
+	if strings.Contains(addr, ".") {
+		return fmt.Sprintf("%s:%d", addr, port)
+	} else {
+		return fmt.Sprintf("[%s]:%d", addr, port)
+	}
+}
+
 func (pxy *XTCPProxy) InWorkConn(conn net.Conn, m *msg.StartWorkConn) {
 	xl := pxy.xl
 	defer conn.Close()
@@ -306,8 +314,8 @@ func (pxy *XTCPProxy) InWorkConn(conn net.Conn, m *msg.StartWorkConn) {
 		ProxyName: pxy.cfg.ProxyName,
 		Sid:       natHoleSidMsg.Sid,
 	}
-	raddr, _ := net.ResolveUDPAddr("udp",
-		fmt.Sprintf("%s:%d", pxy.clientCfg.ServerAddr, pxy.serverUDPPort))
+
+	raddr, _ := net.ResolveUDPAddr("udp", newAddress(pxy.clientCfg.ServerAddr, pxy.serverUDPPort))
 	clientConn, err := net.DialUDP("udp", nil, raddr)
 	defer clientConn.Close()
 
@@ -448,7 +456,7 @@ type UDPProxy struct {
 }
 
 func (pxy *UDPProxy) Run() (err error) {
-	pxy.localAddr, err = net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%d", pxy.cfg.LocalIP, pxy.cfg.LocalPort))
+	pxy.localAddr, err = net.ResolveUDPAddr("udp", newAddress(pxy.cfg.LocalIP, pxy.cfg.LocalPort))
 	if err != nil {
 		return
 	}
@@ -787,7 +795,7 @@ func HandleTCPWorkConnection(ctx context.Context, localInfo *config.LocalSvrConf
 		return
 	}
 
-	localConn, err := frpNet.ConnectServer("tcp", fmt.Sprintf("%s:%d", localInfo.LocalIP, localInfo.LocalPort))
+	localConn, err := frpNet.ConnectServer("tcp", newAddress(localInfo.LocalIP, localInfo.LocalPort))
 	if err != nil {
 		workConn.Close()
 		xl.Error("connect to local service [%s:%d] error: %v", localInfo.LocalIP, localInfo.LocalPort, err)

@@ -17,7 +17,7 @@ package client
 import (
 	"context"
 	"crypto/tls"
-	"fmt"
+	"github.com/fatedier/frp/pkg/util/log"
 	"io"
 	"net"
 	"runtime/debug"
@@ -80,7 +80,8 @@ type Control struct {
 
 	mu sync.RWMutex
 
-	xl *xlog.Logger
+	ProxyFunc func(err error)
+	xl        *xlog.Logger
 
 	// service context
 	ctx context.Context
@@ -176,17 +177,34 @@ func (ctl *Control) HandleNewProxyResp(inMsg *msg.NewProxyResp) {
 	err := ctl.pm.StartProxy(inMsg.ProxyName, inMsg.RemoteAddr, inMsg.Error)
 	if err != nil {
 		xl.Warn("[%s] start error: %v", inMsg.ProxyName, err)
+		if ctl.ProxyFunc != nil {
+			ctl.ProxyFunc(err)
+		}
 	} else {
 		xl.Info("[%s] start proxy success", inMsg.ProxyName)
 	}
 }
 
 func (ctl *Control) Close() error {
-	ctl.pm.Close()
-	ctl.conn.Close()
-	ctl.vm.Close()
 	if ctl.session != nil {
 		ctl.session.Close()
+	}
+
+	if ctl.conn != nil {
+		_ = ctl.conn.Close()
+		ctl.conn = nil
+		ctl.msgHandlerShutdown = nil
+		ctl.readerShutdown = nil
+		ctl.session = nil
+		log.Info("conn closed")
+	}
+
+	if ctl.pm != nil {
+		ctl.pm.Close()
+	}
+
+	if ctl.vm != nil {
+		ctl.vm.Close()
 	}
 	return nil
 }
@@ -223,7 +241,7 @@ func (ctl *Control) connectServer() (conn net.Conn, err error) {
 			}
 		}
 		conn, err = frpNet.ConnectServerByProxyWithTLS(ctl.clientCfg.HTTPProxy, ctl.clientCfg.Protocol,
-			fmt.Sprintf("%s:%d", ctl.clientCfg.ServerAddr, ctl.clientCfg.ServerPort), tlsConfig)
+			newAddress(ctl.clientCfg.ServerAddr, ctl.clientCfg.ServerPort), tlsConfig)
 		if err != nil {
 			xl.Warn("start new connection to server error: %v", err)
 			return
@@ -353,11 +371,18 @@ func (ctl *Control) worker() {
 	case <-ctl.closedCh:
 		// close related channels and wait until other goroutines done
 		close(ctl.readCh)
-		ctl.readerShutdown.WaitDone()
-		ctl.msgHandlerShutdown.WaitDone()
+		if ctl.readerShutdown != nil {
+			ctl.readerShutdown.WaitDone()
+		}
+
+		if ctl.msgHandlerShutdown != nil {
+			ctl.msgHandlerShutdown.WaitDone()
+		}
 
 		close(ctl.sendCh)
-		ctl.writerShutdown.WaitDone()
+		if ctl.writerShutdown != nil {
+			ctl.writerShutdown.WaitDone()
+		}
 
 		ctl.pm.Close()
 		ctl.vm.Close()

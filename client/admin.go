@@ -15,7 +15,6 @@
 package client
 
 import (
-	"fmt"
 	"net"
 	"net/http"
 	"time"
@@ -51,7 +50,7 @@ func (svr *Service) RunAdminServer(addr string, port int) (err error) {
 		http.Redirect(w, r, "/static/", http.StatusMovedPermanently)
 	})
 
-	address := fmt.Sprintf("%s:%d", addr, port)
+	address := newAddress(addr, port)
 	server := &http.Server{
 		Addr:         address,
 		Handler:      router,

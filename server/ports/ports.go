@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"strings"
 	"sync"
 	"time"
 )
@@ -37,6 +38,7 @@ type Manager struct {
 	bindAddr string
 	netType  string
 	mu       sync.Mutex
+	stop     chan bool
 }
 
 func NewManager(netType string, bindAddr string, allowPorts map[int]struct{}) *Manager {
@@ -46,6 +48,7 @@ func NewManager(netType string, bindAddr string, allowPorts map[int]struct{}) *M
 		freePorts:     make(map[int]struct{}),
 		bindAddr:      bindAddr,
 		netType:       netType,
+		stop:          make(chan bool),
 	}
 	if len(allowPorts) > 0 {
 		for port := range allowPorts {
@@ -132,9 +135,17 @@ func (pm *Manager) Acquire(name string, port int) (realPort int, err error) {
 	return
 }
 
+func newAddress(addr string, port int) string {
+	if strings.Contains(addr, ".") {
+		return fmt.Sprintf("%s:%d", addr, port)
+	} else {
+		return fmt.Sprintf("[%s]:%d", addr, port)
+	}
+}
+
 func (pm *Manager) isPortAvailable(port int) bool {
 	if pm.netType == "udp" {
-		addr, err := net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%d", pm.bindAddr, port))
+		addr, err := net.ResolveUDPAddr("udp", newAddress(pm.bindAddr, port))
 		if err != nil {
 			return false
 		}
@@ -146,7 +157,7 @@ func (pm *Manager) isPortAvailable(port int) bool {
 		return true
 	}
 
-	l, err := net.Listen(pm.netType, fmt.Sprintf("%s:%d", pm.bindAddr, port))
+	l, err := net.Listen(pm.netType, newAddress(pm.bindAddr, port))
 	if err != nil {
 		return false
 	}
@@ -167,14 +178,29 @@ func (pm *Manager) Release(port int) {
 
 // Release reserved port if it isn't used in last 24 hours.
 func (pm *Manager) cleanReservedPortsWorker() {
+	ticket := time.NewTicker(CleanReservedPortsInterval)
+FOR:
 	for {
-		time.Sleep(CleanReservedPortsInterval)
-		pm.mu.Lock()
-		for name, ctx := range pm.reservedPorts {
-			if ctx.Closed && time.Since(ctx.UpdateTime) > MaxPortReservedDuration {
-				delete(pm.reservedPorts, name)
+		select {
+		case <-ticket.C:
+			pm.mu.Lock()
+			for name, ctx := range pm.reservedPorts {
+				if ctx.Closed && time.Since(ctx.UpdateTime) > MaxPortReservedDuration {
+					delete(pm.reservedPorts, name)
+				}
+			}
+			pm.mu.Unlock()
+		case s := <-pm.stop:
+			if s {
+				ticket.Stop()
+				close(pm.stop)
+				break FOR
 			}
 		}
-		pm.mu.Unlock()
 	}
+}
+
+// Stop Stop
+func (pm *Manager) Stop() {
+	pm.stop <- true
 }

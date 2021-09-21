@@ -23,6 +23,7 @@ import (
 	"net"
 	"net/http"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/fatedier/frp/assets"
@@ -91,9 +92,23 @@ type Service struct {
 	// Verifies authentication based on selected method
 	authVerifier auth.Verifier
 
+	// Closed is service closed
+	Closed bool
+
+	// close chan
+	closedCh chan bool
+
 	tlsConfig *tls.Config
 
 	cfg config.ServerCommonConf
+}
+
+func newAddress(addr string, port int) string {
+	if strings.Contains(addr, ".") {
+		return fmt.Sprintf("%s:%d", addr, port)
+	} else {
+		return fmt.Sprintf("[%s]:%d", addr, port)
+	}
 }
 
 func NewService(cfg config.ServerCommonConf) (svr *Service, err error) {
@@ -114,6 +129,8 @@ func NewService(cfg config.ServerCommonConf) (svr *Service, err error) {
 			TCPPortManager: ports.NewManager("tcp", cfg.ProxyBindAddr, cfg.AllowPorts),
 			UDPPortManager: ports.NewManager("udp", cfg.ProxyBindAddr, cfg.AllowPorts),
 		},
+		Closed:          true,
+		closedCh:        make(chan bool),
 		httpVhostRouter: vhost.NewRouters(),
 		authVerifier:    auth.NewAuthVerifier(cfg.ServerConfig),
 		tlsConfig:       tlsConfig,
@@ -176,7 +193,7 @@ func NewService(cfg config.ServerCommonConf) (svr *Service, err error) {
 	}
 
 	// Listen for accepting connections from client.
-	ln, err := net.Listen("tcp", fmt.Sprintf("%s:%d", cfg.BindAddr, cfg.BindPort))
+	ln, err := net.Listen("tcp", newAddress(cfg.BindAddr, cfg.BindPort))
 	if err != nil {
 		err = fmt.Errorf("Create server listener error, %v", err)
 		return
@@ -213,7 +230,7 @@ func NewService(cfg config.ServerCommonConf) (svr *Service, err error) {
 		}, svr.httpVhostRouter)
 		svr.rc.HTTPReverseProxy = rp
 
-		address := fmt.Sprintf("%s:%d", cfg.ProxyBindAddr, cfg.VhostHTTPPort)
+		address := newAddress(cfg.ProxyBindAddr, cfg.VhostHTTPPort)
 		server := &http.Server{
 			Addr:    address,
 			Handler: rp,
@@ -238,7 +255,7 @@ func NewService(cfg config.ServerCommonConf) (svr *Service, err error) {
 		if httpsMuxOn {
 			l = svr.muxer.ListenHttps(1)
 		} else {
-			l, err = net.Listen("tcp", fmt.Sprintf("%s:%d", cfg.ProxyBindAddr, cfg.VhostHTTPSPort))
+			l, err = net.Listen("tcp", newAddress(cfg.ProxyBindAddr, cfg.VhostHTTPSPort))
 			if err != nil {
 				err = fmt.Errorf("Create server listener error, %v", err)
 				return
@@ -261,7 +278,7 @@ func NewService(cfg config.ServerCommonConf) (svr *Service, err error) {
 	// Create nat hole controller.
 	if cfg.BindUDPPort > 0 {
 		var nc *nathole.Controller
-		addr := fmt.Sprintf("%s:%d", cfg.BindAddr, cfg.BindUDPPort)
+		addr := newAddress(cfg.BindAddr, cfg.BindUDPPort)
 		nc, err = nathole.NewController(addr)
 		if err != nil {
 			err = fmt.Errorf("Create nat hole controller error, %v", err)
@@ -275,7 +292,7 @@ func NewService(cfg config.ServerCommonConf) (svr *Service, err error) {
 	// Create dashboard web server.
 	if cfg.DashboardPort > 0 {
 		// Init dashboard assets
-		err = assets.Load(cfg.AssetsDir)
+		err = assets.Load(cfg.AssetsDir, assets.Frps)
 		if err != nil {
 			err = fmt.Errorf("Load assets error: %v", err)
 			return
@@ -309,7 +326,34 @@ func (svr *Service) Run() {
 	go svr.HandleListener(svr.websocketListener)
 	go svr.HandleListener(svr.tlsListener)
 
+	svr.Closed = false
 	svr.HandleListener(svr.listener)
+}
+
+func closeListener(listeners ...net.Listener) (err error) {
+	for _, l := range listeners {
+		if l == nil {
+			continue
+		}
+
+		if err = l.Close(); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// Stop 停止服务
+func (svr *Service) Stop() (err error) {
+	if err = closeListener(svr.listener, svr.kcpListener, svr.websocketListener, svr.listener); err != nil {
+		return err
+	}
+	close(svr.closedCh)
+	svr.Closed = true
+	svr.rc.TCPPortManager.Stop()
+	svr.rc.UDPPortManager.Stop()
+	return err
 }
 
 func (svr *Service) handleConnection(ctx context.Context, conn net.Conn) {

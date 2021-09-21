@@ -2,7 +2,6 @@ package net
 
 import (
 	"errors"
-	"fmt"
 	"net"
 	"net/http"
 	"net/url"
@@ -54,7 +53,7 @@ func NewWebsocketListener(ln net.Listener) (wl *WebsocketListener) {
 }
 
 func ListenWebsocket(bindAddr string, bindPort int) (*WebsocketListener, error) {
-	tcpLn, err := net.Listen("tcp", fmt.Sprintf("%s:%d", bindAddr, bindPort))
+	tcpLn, err := net.Listen("tcp", newAddress(bindAddr, bindPort))
 	if err != nil {
 		return nil, err
 	}
@@ -71,6 +70,14 @@ func (p *WebsocketListener) Accept() (net.Conn, error) {
 }
 
 func (p *WebsocketListener) Close() error {
+	if p.acceptCh != nil {
+		close(p.acceptCh)
+	}
+	if p.ln != nil {
+		if err := p.ln.Close(); err != nil {
+			return err
+		}
+	}
 	return p.server.Close()
 }
 

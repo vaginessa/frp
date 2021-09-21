@@ -163,7 +163,7 @@ type UDPListener struct {
 }
 
 func ListenUDP(bindAddr string, bindPort int) (l *UDPListener, err error) {
-	udpAddr, err := net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%d", bindAddr, bindPort))
+	udpAddr, err := net.ResolveUDPAddr("udp", newAddress(bindAddr, bindPort))
 	if err != nil {
 		return l, err
 	}
