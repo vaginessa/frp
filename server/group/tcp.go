@@ -15,9 +15,8 @@
 package group
 
 import (
-	"fmt"
 	"net"
-	"strings"
+	"strconv"
 	"sync"
 
 	"github.com/fatedier/frp/server/ports"
@@ -90,14 +89,6 @@ func NewTCPGroup(ctl *TCPGroupCtl) *TCPGroup {
 	}
 }
 
-func newAddress(addr string, port int) string {
-	if strings.Contains(addr, ".") {
-		return fmt.Sprintf("%s:%d", addr, port)
-	} else {
-		return fmt.Sprintf("[%s]:%d", addr, port)
-	}
-}
-
 // Listen will return a new TCPGroupListener
 // if TCPGroup already has a listener, just add a new TCPGroupListener to the queues
 // otherwise, listen on the real address
@@ -110,7 +101,7 @@ func (tg *TCPGroup) Listen(proxyName string, group string, groupKey string, addr
 		if err != nil {
 			return
 		}
-		tcpLn, errRet := net.Listen("tcp", newAddress(addr, port))
+		tcpLn, errRet := net.Listen("tcp", net.JoinHostPort(addr, strconv.Itoa(port)))
 		if errRet != nil {
 			err = errRet
 			return

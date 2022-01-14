@@ -16,10 +16,9 @@ package net
 
 import (
 	"fmt"
-	"net"
-	"strings"
-
 	kcp "github.com/fatedier/kcp-go"
+	"net"
+	"strconv"
 )
 
 type KCPListener struct {
@@ -28,16 +27,8 @@ type KCPListener struct {
 	closeFlag bool
 }
 
-func newAddress(addr string, port int) string {
-	if strings.Contains(addr, ".") {
-		return fmt.Sprintf("%s:%d", addr, port)
-	} else {
-		return fmt.Sprintf("[%s]:%d", addr, port)
-	}
-}
-
 func ListenKcp(bindAddr string, bindPort int) (l *KCPListener, err error) {
-	listener, err := kcp.ListenWithOptions(newAddress(bindAddr, bindPort), nil, 10, 3)
+	listener, err := kcp.ListenWithOptions(net.JoinHostPort(bindAddr, strconv.Itoa(bindPort)), nil, 10, 3)
 	if err != nil {
 		return l, err
 	}

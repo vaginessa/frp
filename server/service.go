@@ -23,6 +23,7 @@ import (
 	"net"
 	"net/http"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -193,7 +194,7 @@ func NewService(cfg config.ServerCommonConf) (svr *Service, err error) {
 	}
 
 	// Listen for accepting connections from client.
-	ln, err := net.Listen("tcp", newAddress(cfg.BindAddr, cfg.BindPort))
+	ln, err := net.Listen("tcp", net.JoinHostPort(cfg.BindAddr, strconv.Itoa(cfg.BindPort)))
 	if err != nil {
 		err = fmt.Errorf("Create server listener error, %v", err)
 		return
