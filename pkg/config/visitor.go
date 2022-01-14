@@ -19,7 +19,7 @@ import (
 	"reflect"
 	"strconv"
 
-	"github.com/fatedier/frp/pkg/consts"
+	"github.com/HaidyCao/frp_0343/pkg/consts"
 
 	ini "github.com/vaughan0/go-ini"
 )

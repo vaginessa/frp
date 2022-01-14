@@ -9,8 +9,8 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/fatedier/frp/test/e2e/pkg/port"
-	"github.com/fatedier/frp/test/e2e/pkg/process"
+	"github.com/HaidyCao/frp_0343/test/e2e/pkg/port"
+	"github.com/HaidyCao/frp_0343/test/e2e/pkg/process"
 
 	"github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/config"

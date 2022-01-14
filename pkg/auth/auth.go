@@ -17,8 +17,8 @@ package auth
 import (
 	"fmt"
 
-	"github.com/fatedier/frp/pkg/consts"
-	"github.com/fatedier/frp/pkg/msg"
+	"github.com/HaidyCao/frp_0343/pkg/consts"
+	"github.com/HaidyCao/frp_0343/pkg/msg"
 
 	"github.com/vaughan0/go-ini"
 )

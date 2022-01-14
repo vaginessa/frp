@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/fatedier/frp/pkg/config"
+	"github.com/HaidyCao/frp_0343/pkg/config"
 )
 
 type TCPProxy struct {

@@ -9,7 +9,7 @@ import (
 
 	"github.com/onsi/ginkgo"
 
-	e2eginkgowrapper "github.com/fatedier/frp/test/e2e/framework/ginkgowrapper"
+	e2eginkgowrapper "github.com/HaidyCao/frp_0343/test/e2e/framework/ginkgowrapper"
 )
 
 func nowStamp() string {

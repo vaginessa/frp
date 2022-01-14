@@ -7,7 +7,7 @@ import (
 	"os"
 	"syscall"
 
-	frpNet "github.com/fatedier/frp/pkg/util/net"
+	frpNet "github.com/HaidyCao/frp_0343/pkg/util/net"
 )
 
 type EchoServer struct {

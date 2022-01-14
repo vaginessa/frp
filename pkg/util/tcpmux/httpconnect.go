@@ -22,8 +22,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/fatedier/frp/pkg/util/util"
-	"github.com/fatedier/frp/pkg/util/vhost"
+	"github.com/HaidyCao/frp_0343/pkg/util/util"
+	"github.com/HaidyCao/frp_0343/pkg/util/vhost"
 )
 
 type HTTPConnectTCPMuxer struct {

@@ -19,9 +19,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/fatedier/frp/pkg/auth"
-	plugin "github.com/fatedier/frp/pkg/plugin/server"
-	"github.com/fatedier/frp/pkg/util/util"
+	"github.com/HaidyCao/frp_0343/pkg/auth"
+	plugin "github.com/HaidyCao/frp_0343/pkg/plugin/server"
+	"github.com/HaidyCao/frp_0343/pkg/util/util"
 
 	ini "github.com/vaughan0/go-ini"
 )

@@ -5,7 +5,7 @@ import (
 	"net"
 	"strings"
 
-	fnet "github.com/fatedier/frp/pkg/util/net"
+	fnet "github.com/HaidyCao/frp_0343/pkg/util/net"
 )
 
 type ServerType string

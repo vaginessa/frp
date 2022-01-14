@@ -8,11 +8,11 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/fatedier/frp/client/event"
-	"github.com/fatedier/frp/client/health"
-	"github.com/fatedier/frp/pkg/config"
-	"github.com/fatedier/frp/pkg/msg"
-	"github.com/fatedier/frp/pkg/util/xlog"
+	"github.com/HaidyCao/frp_0343/client/event"
+	"github.com/HaidyCao/frp_0343/client/health"
+	"github.com/HaidyCao/frp_0343/pkg/config"
+	"github.com/HaidyCao/frp_0343/pkg/msg"
+	"github.com/HaidyCao/frp_0343/pkg/util/xlog"
 
 	"github.com/fatedier/golib/errors"
 )

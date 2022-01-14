@@ -22,13 +22,13 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/fatedier/frp/pkg/config"
-	"github.com/fatedier/frp/pkg/msg"
-	plugin "github.com/fatedier/frp/pkg/plugin/server"
-	frpNet "github.com/fatedier/frp/pkg/util/net"
-	"github.com/fatedier/frp/pkg/util/xlog"
-	"github.com/fatedier/frp/server/controller"
-	"github.com/fatedier/frp/server/metrics"
+	"github.com/HaidyCao/frp_0343/pkg/config"
+	"github.com/HaidyCao/frp_0343/pkg/msg"
+	plugin "github.com/HaidyCao/frp_0343/pkg/plugin/server"
+	frpNet "github.com/HaidyCao/frp_0343/pkg/util/net"
+	"github.com/HaidyCao/frp_0343/pkg/util/xlog"
+	"github.com/HaidyCao/frp_0343/server/controller"
+	"github.com/HaidyCao/frp_0343/server/metrics"
 
 	frpIo "github.com/fatedier/golib/io"
 )

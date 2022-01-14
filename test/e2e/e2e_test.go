@@ -6,12 +6,12 @@ import (
 	"os"
 	"testing"
 
-	"github.com/fatedier/frp/pkg/util/log"
-	"github.com/fatedier/frp/test/e2e/framework"
+	"github.com/HaidyCao/frp_0343/pkg/util/log"
+	"github.com/HaidyCao/frp_0343/test/e2e/framework"
 
 	// test source
-	_ "github.com/fatedier/frp/test/e2e/basic"
-	_ "github.com/fatedier/frp/test/e2e/plugin"
+	_ "github.com/HaidyCao/frp_0343/test/e2e/basic"
+	_ "github.com/HaidyCao/frp_0343/test/e2e/plugin"
 
 	_ "github.com/onsi/ginkgo"
 )

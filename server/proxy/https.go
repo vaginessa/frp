@@ -17,9 +17,9 @@ package proxy
 import (
 	"strings"
 
-	"github.com/fatedier/frp/pkg/config"
-	"github.com/fatedier/frp/pkg/util/util"
-	"github.com/fatedier/frp/pkg/util/vhost"
+	"github.com/HaidyCao/frp_0343/pkg/config"
+	"github.com/HaidyCao/frp_0343/pkg/util/util"
+	"github.com/HaidyCao/frp_0343/pkg/util/vhost"
 )
 
 type HTTPSProxy struct {

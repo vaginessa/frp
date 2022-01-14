@@ -18,12 +18,12 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/fatedier/frp/pkg/auth"
-	"github.com/fatedier/frp/pkg/config"
-	"github.com/fatedier/frp/pkg/util/log"
-	"github.com/fatedier/frp/pkg/util/util"
-	"github.com/fatedier/frp/pkg/util/version"
-	"github.com/fatedier/frp/server"
+	"github.com/HaidyCao/frp_0343/pkg/auth"
+	"github.com/HaidyCao/frp_0343/pkg/config"
+	"github.com/HaidyCao/frp_0343/pkg/util/log"
+	"github.com/HaidyCao/frp_0343/pkg/util/util"
+	"github.com/HaidyCao/frp_0343/pkg/util/version"
+	"github.com/HaidyCao/frp_0343/server"
 
 	"github.com/spf13/cobra"
 )
