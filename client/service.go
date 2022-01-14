@@ -21,6 +21,7 @@ import (
 	"io/ioutil"
 	"net"
 	"runtime"
+	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -257,8 +258,9 @@ func (svr *Service) login() (conn net.Conn, session *fmux.Session, err error) {
 			return
 		}
 	}
-	conn, err = frpNet.ConnectServerByProxyWithTLS(svr.cfg.HTTPProxy, svr.cfg.Protocol,
-		newAddress(svr.cfg.ServerAddr, svr.cfg.ServerPort), tlsConfig)
+
+	address := net.JoinHostPort(svr.cfg.ServerAddr, strconv.Itoa(svr.cfg.ServerPort))
+	conn, err = frpNet.ConnectServerByProxyWithTLS(svr.cfg.HTTPProxy, svr.cfg.Protocol, address, tlsConfig)
 	if err != nil {
 		return
 	}

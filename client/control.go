@@ -21,6 +21,7 @@ import (
 	"io"
 	"net"
 	"runtime/debug"
+	"strconv"
 	"sync"
 	"time"
 
@@ -240,8 +241,10 @@ func (ctl *Control) connectServer() (conn net.Conn, err error) {
 				return
 			}
 		}
-		conn, err = frpNet.ConnectServerByProxyWithTLS(ctl.clientCfg.HTTPProxy, ctl.clientCfg.Protocol,
-			newAddress(ctl.clientCfg.ServerAddr, ctl.clientCfg.ServerPort), tlsConfig)
+
+		address := net.JoinHostPort(ctl.clientCfg.ServerAddr, strconv.Itoa(ctl.clientCfg.ServerPort))
+		conn, err = frpNet.ConnectServerByProxyWithTLS(ctl.clientCfg.HTTPProxy, ctl.clientCfg.Protocol, address, tlsConfig)
+
 		if err != nil {
 			xl.Warn("start new connection to server error: %v", err)
 			return
@@ -313,7 +316,7 @@ func (ctl *Control) msgHandler() {
 	}()
 	defer ctl.msgHandlerShutdown.Done()
 
-	hbSend := time.NewTicker(time.Duration(ctl.clientCfg.HeartBeatInterval) * time.Second)
+	hbSend := time.NewTicker(time.Duration(ctl.clientCfg.HeartbeatInterval) * time.Second)
 	defer hbSend.Stop()
 	hbCheck := time.NewTicker(time.Second)
 	defer hbCheck.Stop()
@@ -332,7 +335,7 @@ func (ctl *Control) msgHandler() {
 			}
 			ctl.sendCh <- pingMsg
 		case <-hbCheck.C:
-			if time.Since(ctl.lastPong) > time.Duration(ctl.clientCfg.HeartBeatTimeout)*time.Second {
+			if time.Since(ctl.lastPong) > time.Duration(ctl.clientCfg.HeartbeatTimeout)*time.Second {
 				xl.Warn("heartbeat timeout")
 				// let reader() stop
 				ctl.conn.Close()

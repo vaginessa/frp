@@ -1,3 +1,3 @@
-### New
+### Fix
 
-* Command line parameters support `enable_prometheus`.
+* Reduce binary file size.
