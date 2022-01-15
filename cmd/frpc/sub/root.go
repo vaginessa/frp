@@ -136,23 +136,11 @@ func RunFrpc(cfgFilePath string) (err error) {
 func NewService(cfgFilePath string) (ser *client.Service, err error) {
 	cmd = false
 	crypto.DefaultSalt = "frp"
-	return returnClient(cfgFilePath, false)
+	return returnClient(cfgFilePath)
 }
 
-func returnClient(cfgFilePath string, run bool) (svr *client.Service, err error) {
-	var content []byte
-
-	content, err = config.GetRenderedConfFromFile(cfgFilePath)
-	if err != nil {
-		return nil, err
-	}
-
-	cfg, err := parseClientCommonCfg(CfgFileTypeIni, content)
-	if err != nil {
-		return nil, err
-	}
-
-	pxyCfgs, visitorCfgs, err := config.LoadAllProxyConfsFromIni(cfg.User, content, cfg.Start)
+func returnClient(cfgFilePath string) (svr *client.Service, err error) {
+	cfg, pxyCfgs, visitorCfgs, err := config.ParseClientConfig(cfgFilePath)
 	if err != nil {
 		return nil, err
 	}
@@ -270,7 +258,9 @@ func startService(
 }
 
 func returnService(cfg config.ClientCommonConf, pxyCfgs map[string]config.ProxyConf, visitorCfgs map[string]config.VisitorConf, cfgFile string) (svr *client.Service, err error) {
-	log.InitLog(cfg.LogWay, cfg.LogFile, cfg.LogLevel, cfg.LogMaxDays, cfg.DisableLogColor)
+	log.InitLog(cfg.LogWay, cfg.LogFile, cfg.LogLevel,
+		cfg.LogMaxDays, cfg.DisableLogColor)
+
 	if cfg.DNSServer != "" {
 		s := cfg.DNSServer
 		if !strings.Contains(s, ":") {
