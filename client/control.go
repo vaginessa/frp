@@ -187,9 +187,18 @@ func (ctl *Control) HandleNewProxyResp(inMsg *msg.NewProxyResp) {
 }
 
 func (ctl *Control) Close() error {
-	if ctl.session != nil {
-		ctl.session.Close()
+	return ctl.GracefulClose(0)
+}
+
+func (ctl *Control) GracefulClose(d time.Duration) error {
+	if ctl.pm != nil {
+		ctl.pm.Close()
 	}
+	if ctl.vm != nil {
+		ctl.vm.Close()
+	}
+
+	time.Sleep(d)
 
 	if ctl.conn != nil {
 		_ = ctl.conn.Close()
@@ -199,13 +208,8 @@ func (ctl *Control) Close() error {
 		ctl.session = nil
 		log.Info("conn closed")
 	}
-
-	if ctl.pm != nil {
-		ctl.pm.Close()
-	}
-
-	if ctl.vm != nil {
-		ctl.vm.Close()
+	if ctl.session != nil {
+		ctl.session.Close()
 	}
 	return nil
 }
@@ -247,7 +251,7 @@ func (ctl *Control) connectServer() (conn net.Conn, err error) {
 		}
 
 		address := net.JoinHostPort(ctl.clientCfg.ServerAddr, strconv.Itoa(ctl.clientCfg.ServerPort))
-		conn, err = frpNet.ConnectServerByProxyWithTLS(ctl.clientCfg.HTTPProxy, ctl.clientCfg.Protocol, address, tlsConfig)
+		conn, err = frpNet.ConnectServerByProxyWithTLS(ctl.clientCfg.HTTPProxy, ctl.clientCfg.Protocol, address, tlsConfig, ctl.clientCfg.DisableCustomTLSFirstByte)
 
 		if err != nil {
 			xl.Warn("start new connection to server error: %v", err)
