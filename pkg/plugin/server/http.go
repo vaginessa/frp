@@ -17,19 +17,22 @@ package plugin
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"reflect"
+	"strings"
 )
 
 type HTTPPluginOptions struct {
-	Name string
-	Addr string
-	Path string
-	Ops  []string
+	Name      string   `ini:"name"`
+	Addr      string   `ini:"addr"`
+	Path      string   `ini:"path"`
+	Ops       []string `ini:"ops"`
+	TLSVerify bool     `ini:"tls_verify"`
 }
 
 type httpPlugin struct {
@@ -40,10 +43,25 @@ type httpPlugin struct {
 }
 
 func NewHTTPPluginOptions(options HTTPPluginOptions) Plugin {
+	var url = fmt.Sprintf("%s%s", options.Addr, options.Path)
+
+	var client *http.Client
+	if strings.HasPrefix(url, "https://") {
+		tr := &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: options.TLSVerify == false},
+		}
+		client = &http.Client{Transport: tr}
+	} else {
+		client = &http.Client{}
+	}
+
+	if !strings.HasPrefix(url, "https://") && !strings.HasPrefix(url, "http://") {
+		url = "http://" + url
+	}
 	return &httpPlugin{
 		options: options,
-		url:     fmt.Sprintf("http://%s%s", options.Addr, options.Path),
-		client:  &http.Client{},
+		url:     url,
+		client:  client,
 	}
 }
 
@@ -98,7 +116,7 @@ func (p *httpPlugin) do(ctx context.Context, r *Request, res *Response) error {
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("do http request error code: %d", resp.StatusCode)
 	}
-	buf, err = ioutil.ReadAll(resp.Body)
+	buf, err = io.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}

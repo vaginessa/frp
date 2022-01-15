@@ -78,7 +78,7 @@
         },
         methods: {
             fetchData() {
-                fetch('/api/serverinfo', {credentials: 'include'})
+                fetch('../api/serverinfo', {credentials: 'include'})
               .then(res => {
                 return res.json()
               }).then(json => {
@@ -121,6 +121,9 @@
                     }
                     if (json.proxy_type_count.stcp != null) {
                         this.proxy_counts += json.proxy_type_count.stcp
+                    }
+                    if (json.proxy_type_count.sudp != null) {
+                        this.proxy_counts += json.proxy_type_count.sudp
                     }
                     if (json.proxy_type_count.xtcp != null) {
                         this.proxy_counts += json.proxy_type_count.xtcp

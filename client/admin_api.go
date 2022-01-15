@@ -17,8 +17,9 @@ package client
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
+	"os"
 	"sort"
 	"strings"
 
@@ -32,37 +33,25 @@ type GeneralResponse struct {
 	Msg  string
 }
 
-// GET api/reload
+// /healthz
+func (svr *Service) healthz(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(200)
+}
 
+// GET api/reload
 func (svr *Service) apiReload(w http.ResponseWriter, r *http.Request) {
 	res := GeneralResponse{Code: 200}
 
-	log.Info("Http request [/api/reload]")
+	log.Info("api request [/api/reload]")
 	defer func() {
-		log.Info("Http response [/api/reload], code [%d]", res.Code)
+		log.Info("api response [/api/reload], code [%d]", res.Code)
 		w.WriteHeader(res.Code)
 		if len(res.Msg) > 0 {
 			w.Write([]byte(res.Msg))
 		}
 	}()
 
-	content, err := config.GetRenderedConfFromFile(svr.cfgFile)
-	if err != nil {
-		res.Code = 400
-		res.Msg = err.Error()
-		log.Warn("reload frpc config file error: %s", res.Msg)
-		return
-	}
-
-	newCommonCfg, err := config.UnmarshalClientConfFromIni(content)
-	if err != nil {
-		res.Code = 400
-		res.Msg = err.Error()
-		log.Warn("reload frpc common section error: %s", res.Msg)
-		return
-	}
-
-	pxyCfgs, visitorCfgs, err := config.LoadAllConfFromIni(svr.cfg.User, content, newCommonCfg.Start)
+	_, pxyCfgs, visitorCfgs, err := config.ParseClientConfig(svr.cfgFile)
 	if err != nil {
 		res.Code = 400
 		res.Msg = err.Error()
@@ -70,8 +59,7 @@ func (svr *Service) apiReload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = svr.ReloadConf(pxyCfgs, visitorCfgs)
-	if err != nil {
+	if err = svr.ReloadConf(pxyCfgs, visitorCfgs); err != nil {
 		res.Code = 500
 		res.Msg = err.Error()
 		log.Warn("reload frpc proxy config error: %s", res.Msg)
@@ -251,7 +239,7 @@ func (svr *Service) apiGetConfig(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rows := strings.Split(content, "\n")
+	rows := strings.Split(string(content), "\n")
 	newRows := make([]string, 0, len(rows))
 	for _, row := range rows {
 		row = strings.TrimSpace(row)
@@ -277,7 +265,7 @@ func (svr *Service) apiPutConfig(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	// get new config content
-	body, err := ioutil.ReadAll(r.Body)
+	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		res.Code = 400
 		res.Msg = fmt.Sprintf("read request body error: %v", err)
@@ -294,7 +282,7 @@ func (svr *Service) apiPutConfig(w http.ResponseWriter, r *http.Request) {
 
 	// get token from origin content
 	token := ""
-	b, err := ioutil.ReadFile(svr.cfgFile)
+	b, err := os.ReadFile(svr.cfgFile)
 	if err != nil {
 		res.Code = 400
 		res.Msg = err.Error()
@@ -333,7 +321,7 @@ func (svr *Service) apiPutConfig(w http.ResponseWriter, r *http.Request) {
 	}
 	content = strings.Join(newRows, "\n")
 
-	err = ioutil.WriteFile(svr.cfgFile, []byte(content), 0644)
+	err = os.WriteFile(svr.cfgFile, []byte(content), 0644)
 	if err != nil {
 		res.Code = 500
 		res.Msg = fmt.Sprintf("write content to frpc config file error: %v", err)

@@ -51,6 +51,11 @@ type serverInfoResp struct {
 	ProxyTypeCounts map[string]int64 `json:"proxy_type_count"`
 }
 
+// /healthz
+func (svr *Service) Healthz(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(200)
+}
+
 // api/serverinfo
 func (svr *Service) APIServerInfo(w http.ResponseWriter, r *http.Request) {
 	res := GeneralResponse{Code: 200}
@@ -74,7 +79,7 @@ func (svr *Service) APIServerInfo(w http.ResponseWriter, r *http.Request) {
 		SubdomainHost:     svr.cfg.SubDomainHost,
 		MaxPoolCount:      svr.cfg.MaxPoolCount,
 		MaxPortsPerClient: svr.cfg.MaxPortsPerClient,
-		HeartBeatTimeout:  svr.cfg.HeartBeatTimeout,
+		HeartBeatTimeout:  svr.cfg.HeartbeatTimeout,
 
 		TotalTrafficIn:  serverStats.TotalTrafficIn,
 		TotalTrafficOut: serverStats.TotalTrafficOut,

@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	namespace       = "frp"
+	namespace       = "frp_v0380"
 	serverSubsystem = "server"
 )
 

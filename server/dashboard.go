@@ -31,7 +31,7 @@ var (
 	httpServerWriteTimeout = 10 * time.Second
 )
 
-func (svr *Service) RunDashboardServer(addr string, port int) (err error) {
+func (svr *Service) RunDashboardServer(address string) (err error) {
 	// url router
 	router := mux.NewRouter()
 
@@ -48,6 +48,7 @@ func (svr *Service) RunDashboardServer(addr string, port int) (err error) {
 	router.HandleFunc("/api/proxy/{type}", svr.APIProxyByType).Methods("GET")
 	router.HandleFunc("/api/proxy/{type}/{name}", svr.APIProxyByTypeAndName).Methods("GET")
 	router.HandleFunc("/api/traffic/{name}", svr.APIProxyTraffic).Methods("GET")
+	router.HandleFunc("/healthz", svr.Healthz)
 
 	// view
 	router.Handle("/favicon.ico", http.FileServer(assets.FileSystem)).Methods("GET")
@@ -57,14 +58,13 @@ func (svr *Service) RunDashboardServer(addr string, port int) (err error) {
 		http.Redirect(w, r, "/static/", http.StatusMovedPermanently)
 	})
 
-	address := newAddress(addr, port)
 	server := &http.Server{
 		Addr:         address,
 		Handler:      router,
 		ReadTimeout:  httpServerReadTimeout,
 		WriteTimeout: httpServerWriteTimeout,
 	}
-	if address == "" {
+	if address == "" || address == ":" {
 		address = ":http"
 	}
 	ln, err := net.Listen("tcp", address)

@@ -19,7 +19,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"sync"
 	"time"
@@ -307,7 +306,7 @@ func (sv *XTCPVisitor) handleConn(userConn net.Conn) {
 
 	fmuxCfg := fmux.DefaultConfig()
 	fmuxCfg.KeepAliveInterval = 5 * time.Second
-	fmuxCfg.LogOutput = ioutil.Discard
+	fmuxCfg.LogOutput = io.Discard
 	sess, err := fmux.Client(remote, fmuxCfg)
 	if err != nil {
 		xl.Error("create yamux session error: %v", err)
@@ -365,7 +364,7 @@ func (sv *SUDPVisitor) Run() (err error) {
 	sv.sendCh = make(chan *msg.UDPPacket, 1024)
 	sv.readCh = make(chan *msg.UDPPacket, 1024)
 
-	xl.Info("sudp start to work")
+	xl.Info("sudp start to work, listen on %s", addr)
 
 	go sv.dispatcher()
 	go udp.ForwardUserConn(sv.udpConn, sv.readCh, sv.sendCh, int(sv.ctl.clientCfg.UDPPacketSize))
@@ -445,7 +444,7 @@ func (sv *SUDPVisitor) worker(workConn net.Conn) {
 			case *msg.UDPPacket:
 				if errRet := errors.PanicToError(func() {
 					sv.readCh <- m
-					xl.Trace("frpc visitor get udp packet from frpc")
+					xl.Trace("frpc visitor get udp packet from workConn: %s", m.Content)
 				}); errRet != nil {
 					xl.Info("reader goroutine for udp work connection closed")
 					return
@@ -474,6 +473,7 @@ func (sv *SUDPVisitor) worker(workConn net.Conn) {
 					xl.Warn("sender goroutine for udp work connection closed: %v", errRet)
 					return
 				}
+				xl.Trace("send udp package to workConn: %s", udpMsg.Content)
 			case <-closeCh:
 				return
 			}

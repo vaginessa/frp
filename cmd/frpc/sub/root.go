@@ -136,22 +136,11 @@ func RunFrpc(cfgFilePath string) (err error) {
 func NewService(cfgFilePath string) (ser *client.Service, err error) {
 	cmd = false
 	crypto.DefaultSalt = "frp"
-	return returnClient(cfgFilePath, false)
+	return returnClient(cfgFilePath)
 }
 
-func returnClient(cfgFilePath string, run bool) (svr *client.Service, err error) {
-	var content string
-	content, err = config.GetRenderedConfFromFile(cfgFilePath)
-	if err != nil {
-		return
-	}
-
-	cfg, err := parseClientCommonCfg(CfgFileTypeIni, content)
-	if err != nil {
-		return
-	}
-
-	pxyCfgs, visitorCfgs, err := config.LoadAllConfFromIni(cfg.User, content, cfg.Start)
+func returnClient(cfgFilePath string) (svr *client.Service, err error) {
+	cfg, pxyCfgs, visitorCfgs, err := config.ParseClientConfig(cfgFilePath)
 	if err != nil {
 		return nil, err
 	}
@@ -178,50 +167,23 @@ func handleSignal(svr *client.Service) {
 	ch := make(chan os.Signal)
 	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
 	<-ch
-	svr.Close()
-	time.Sleep(250 * time.Millisecond)
+	svr.GracefulClose(500 * time.Millisecond)
 	close(kcpDoneCh)
-}
-
-func parseClientCommonCfg(fileType int, content string) (cfg config.ClientCommonConf, err error) {
-	if fileType == CfgFileTypeIni {
-		cfg, err = parseClientCommonCfgFromIni(content)
-	} else if fileType == CfgFileTypeCmd {
-		cfg, err = parseClientCommonCfgFromCmd()
-	}
-	if err != nil {
-		return
-	}
-
-	err = cfg.Check()
-	if err != nil {
-		return
-	}
-	return
-}
-
-func parseClientCommonCfgFromIni(content string) (config.ClientCommonConf, error) {
-	cfg, err := config.UnmarshalClientConfFromIni(content)
-	if err != nil {
-		return config.ClientCommonConf{}, err
-	}
-	return cfg, err
 }
 
 func parseClientCommonCfgFromCmd() (cfg config.ClientCommonConf, err error) {
 	cfg = config.GetDefaultClientConf()
 
-	strs := strings.Split(serverAddr, ":")
-	if len(strs) < 2 {
-		err = fmt.Errorf("invalid server_addr")
+	ipStr, portStr, err := net.SplitHostPort(serverAddr)
+	if err != nil {
+		err = fmt.Errorf("invalid server_addr: %v", err)
 		return
 	}
-	if strs[0] != "" {
-		cfg.ServerAddr = strs[0]
-	}
-	cfg.ServerPort, err = strconv.Atoi(strs[1])
+
+	cfg.ServerAddr = ipStr
+	cfg.ServerPort, err = strconv.Atoi(portStr)
 	if err != nil {
-		err = fmt.Errorf("invalid server_addr")
+		err = fmt.Errorf("invalid server_addr: %v", err)
 		return
 	}
 
@@ -230,11 +192,6 @@ func parseClientCommonCfgFromCmd() (cfg config.ClientCommonConf, err error) {
 	cfg.LogLevel = logLevel
 	cfg.LogFile = logFile
 	cfg.LogMaxDays = int64(logMaxDays)
-	if logFile == "console" {
-		cfg.LogWay = "console"
-	} else {
-		cfg.LogWay = "file"
-	}
 	cfg.DisableLogColor = disableLogColor
 
 	// Only token authentication is supported in cmd mode
@@ -242,28 +199,20 @@ func parseClientCommonCfgFromCmd() (cfg config.ClientCommonConf, err error) {
 	cfg.Token = token
 	cfg.TLSEnable = tlsEnable
 
+	cfg.Complete()
+	if err = cfg.Validate(); err != nil {
+		err = fmt.Errorf("Parse config error: %v", err)
+		return
+	}
 	return
 }
 
-func runClient(cfgFilePath string) (err error) {
-	var content string
-	content, err = config.GetRenderedConfFromFile(cfgFilePath)
-	if err != nil {
-		return
-	}
-
-	cfg, err := parseClientCommonCfg(CfgFileTypeIni, content)
-	if err != nil {
-		return
-	}
-
-	pxyCfgs, visitorCfgs, err := config.LoadAllConfFromIni(cfg.User, content, cfg.Start)
+func runClient(cfgFilePath string) error {
+	cfg, pxyCfgs, visitorCfgs, err := config.ParseClientConfig(cfgFilePath)
 	if err != nil {
 		return err
 	}
-
-	err = startService(cfg, pxyCfgs, visitorCfgs, cfgFilePath)
-	return
+	return startService(cfg, pxyCfgs, visitorCfgs, cfgFilePath)
 }
 
 func startService(
@@ -302,14 +251,16 @@ func startService(
 	}
 
 	err = svr.Run(cmd)
-	if cfg.Protocol == "kcp" {
+	if err == nil && cfg.Protocol == "kcp" {
 		<-kcpDoneCh
 	}
 	return
 }
 
 func returnService(cfg config.ClientCommonConf, pxyCfgs map[string]config.ProxyConf, visitorCfgs map[string]config.VisitorConf, cfgFile string) (svr *client.Service, err error) {
-	log.InitLog(cfg.LogWay, cfg.LogFile, cfg.LogLevel, cfg.LogMaxDays, cfg.DisableLogColor)
+	log.InitLog(cfg.LogWay, cfg.LogFile, cfg.LogLevel,
+		cfg.LogMaxDays, cfg.DisableLogColor)
+
 	if cfg.DNSServer != "" {
 		s := cfg.DNSServer
 		if !strings.Contains(s, ":") {

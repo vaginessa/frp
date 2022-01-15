@@ -17,10 +17,12 @@ package client
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 	"runtime"
+	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -141,12 +143,10 @@ func (svr *Service) Run(isCmd bool) error {
 
 	if svr.cfg.AdminPort != 0 {
 		// Init admin server assets
-		err := assets.Load(svr.cfg.AssetsDir, assets.Frpc)
-		if err != nil {
-			return fmt.Errorf("Load assets error: %v", err)
-		}
+		assets.Load(svr.cfg.AssetsDir)
 
-		err = svr.RunAdminServer(svr.cfg.AdminAddr, svr.cfg.AdminPort)
+		address := net.JoinHostPort(svr.cfg.AdminAddr, strconv.Itoa(svr.cfg.AdminPort))
+		err := svr.RunAdminServer(address)
 		if err != nil {
 			log.Warn("run admin server error: %v", err)
 		}
@@ -211,9 +211,16 @@ func (svr *Service) keepControllerWorking() {
 			if err != nil {
 				xl.Warn("reconnect to server error: %v", err)
 				time.Sleep(delayTime)
-				delayTime = delayTime * 2
-				if delayTime > maxDelayTime {
-					delayTime = maxDelayTime
+
+				opErr := &net.OpError{}
+				// quick retry for dial error
+				if errors.As(err, &opErr) && opErr.Op == "dial" {
+					delayTime = 2 * time.Second
+				} else {
+					delayTime = delayTime * 2
+					if delayTime > maxDelayTime {
+						delayTime = maxDelayTime
+					}
 				}
 				if svr.ReConnectByCount {
 					svr.reConnectCount++
@@ -247,18 +254,24 @@ func (svr *Service) login() (conn net.Conn, session *fmux.Session, err error) {
 	xl := xlog.FromContextSafe(svr.ctx)
 	var tlsConfig *tls.Config
 	if svr.cfg.TLSEnable {
+		sn := svr.cfg.TLSServerName
+		if sn == "" {
+			sn = svr.cfg.ServerAddr
+		}
+
 		tlsConfig, err = transport.NewClientTLSConfig(
 			svr.cfg.TLSCertFile,
 			svr.cfg.TLSKeyFile,
 			svr.cfg.TLSTrustedCaFile,
-			svr.cfg.ServerAddr)
+			sn)
 		if err != nil {
 			xl.Warn("fail to build tls configuration when service login, err: %v", err)
 			return
 		}
 	}
-	conn, err = frpNet.ConnectServerByProxyWithTLS(svr.cfg.HTTPProxy, svr.cfg.Protocol,
-		newAddress(svr.cfg.ServerAddr, svr.cfg.ServerPort), tlsConfig)
+
+	address := net.JoinHostPort(svr.cfg.ServerAddr, strconv.Itoa(svr.cfg.ServerPort))
+	conn, err = frpNet.ConnectServerByProxyWithTLS(svr.cfg.HTTPProxy, svr.cfg.Protocol, address, tlsConfig, svr.cfg.DisableCustomTLSFirstByte)
 	if err != nil {
 		return
 	}
@@ -275,7 +288,7 @@ func (svr *Service) login() (conn net.Conn, session *fmux.Session, err error) {
 	if svr.cfg.TCPMux {
 		fmuxCfg := fmux.DefaultConfig()
 		fmuxCfg.KeepAliveInterval = 20 * time.Second
-		fmuxCfg.LogOutput = ioutil.Discard
+		fmuxCfg.LogOutput = io.Discard
 		session, err = fmux.Client(conn, fmuxCfg)
 		if err != nil {
 			return
@@ -341,9 +354,13 @@ func (svr *Service) ReloadConf(pxyCfgs map[string]config.ProxyConf, visitorCfgs 
 }
 
 func (svr *Service) Close() {
+	svr.GracefulClose(time.Duration(0))
+}
+
+func (svr *Service) GracefulClose(d time.Duration) {
 	atomic.StoreUint32(&svr.exit, 1)
 	if svr.ctl != nil {
-		_ = svr.ctl.Close()
+		svr.ctl.GracefulClose(d)
 	}
 	svr.cancel()
 	svr.ctl = nil

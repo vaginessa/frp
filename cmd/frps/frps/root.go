@@ -103,14 +103,14 @@ var rootCmd = &cobra.Command{
 		var cfg config.ServerCommonConf
 		var err error
 		if cfgFile != "" {
-			var content string
+			var content []byte
 			content, err = config.GetRenderedConfFromFile(cfgFile)
 			if err != nil {
 				return err
 			}
 			cfg, err = parseServerCommonCfg(CfgFileTypeIni, content)
 		} else {
-			cfg, err = parseServerCommonCfg(CfgFileTypeCmd, "")
+			cfg, err = parseServerCommonCfg(CfgFileTypeCmd, nil)
 		}
 		if err != nil {
 			return err
@@ -131,29 +131,22 @@ func Execute() {
 	}
 }
 
-func parseServerCommonCfg(fileType int, content string) (cfg config.ServerCommonConf, err error) {
+func parseServerCommonCfg(fileType int, source []byte) (cfg config.ServerCommonConf, err error) {
 	if fileType == CfgFileTypeIni {
-		cfg, err = parseServerCommonCfgFromIni(content)
+		cfg, err = config.UnmarshalServerConfFromIni(source)
 	} else if fileType == CfgFileTypeCmd {
 		cfg, err = parseServerCommonCfgFromCmd()
 	}
 	if err != nil {
 		return
 	}
-
-	err = cfg.Check()
+	cfg.Complete()
+	err = cfg.Validate()
 	if err != nil {
+		err = fmt.Errorf("Parse config error: %v", err)
 		return
 	}
 	return
-}
-
-func parseServerCommonCfgFromIni(content string) (config.ServerCommonConf, error) {
-	cfg, err := config.UnmarshalServerConfFromIni(content)
-	if err != nil {
-		return config.ServerCommonConf{}, err
-	}
-	return cfg, nil
 }
 
 func parseServerCommonCfgFromCmd() (cfg config.ServerCommonConf, err error) {
@@ -214,7 +207,6 @@ func runServer(cfg config.ServerCommonConf) (err error) {
 	return
 }
 
-
 var service *server.Service
 
 func RunFrps(cfgFile string) error {
@@ -226,14 +218,14 @@ func RunFrps(cfgFile string) error {
 	var err error
 	var cfg config.ServerCommonConf
 	if cfgFile != "" {
-		var content string
+		var content []byte
 		content, err = config.GetRenderedConfFromFile(cfgFile)
 		if err != nil {
 			return err
 		}
 		cfg, err = parseServerCommonCfg(CfgFileTypeIni, content)
 	} else {
-		cfg, err = parseServerCommonCfg(CfgFileTypeCmd, "")
+		cfg, err = parseServerCommonCfg(CfgFileTypeCmd, nil)
 	}
 	if err != nil {
 		return err

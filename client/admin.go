@@ -30,14 +30,15 @@ var (
 	httpServerWriteTimeout = 10 * time.Second
 )
 
-func (svr *Service) RunAdminServer(addr string, port int) (err error) {
+func (svr *Service) RunAdminServer(address string) (err error) {
 	// url router
 	router := mux.NewRouter()
 
 	user, passwd := svr.cfg.AdminUser, svr.cfg.AdminPwd
 	router.Use(frpNet.NewHTTPAuthMiddleware(user, passwd).Middleware)
 
-	// api, see dashboard_api.go
+	// api, see admin_api.go
+	router.HandleFunc("/healthz", svr.healthz)
 	router.HandleFunc("/api/reload", svr.apiReload).Methods("GET")
 	router.HandleFunc("/api/status", svr.apiStatus).Methods("GET")
 	router.HandleFunc("/api/config", svr.apiGetConfig).Methods("GET")
@@ -50,7 +51,6 @@ func (svr *Service) RunAdminServer(addr string, port int) (err error) {
 		http.Redirect(w, r, "/static/", http.StatusMovedPermanently)
 	})
 
-	address := newAddress(addr, port)
 	server := &http.Server{
 		Addr:         address,
 		Handler:      router,
