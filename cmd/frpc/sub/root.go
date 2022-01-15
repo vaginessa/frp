@@ -179,28 +179,8 @@ func handleSignal(svr *client.Service) {
 	ch := make(chan os.Signal)
 	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
 	<-ch
-	svr.Close()
-	time.Sleep(250 * time.Millisecond)
+	svr.GracefulClose(500 * time.Millisecond)
 	close(kcpDoneCh)
-}
-
-func parseClientCommonCfg(fileType int, source []byte) (cfg config.ClientCommonConf, err error) {
-	if fileType == CfgFileTypeIni {
-		cfg, err = config.UnmarshalClientConfFromIni(source)
-	} else if fileType == CfgFileTypeCmd {
-		cfg, err = parseClientCommonCfgFromCmd()
-	}
-	if err != nil {
-		return
-	}
-
-	cfg.Complete()
-	err = cfg.Validate()
-	if err != nil {
-		err = fmt.Errorf("Parse config error: %v", err)
-		return
-	}
-	return
 }
 
 func parseClientCommonCfgFromCmd() (cfg config.ClientCommonConf, err error) {
@@ -231,26 +211,19 @@ func parseClientCommonCfgFromCmd() (cfg config.ClientCommonConf, err error) {
 	cfg.Token = token
 	cfg.TLSEnable = tlsEnable
 
+	cfg.Complete()
+	if err = cfg.Validate(); err != nil {
+		err = fmt.Errorf("Parse config error: %v", err)
+		return
+	}
 	return
 }
 
-func runClient(cfgFilePath string) (err error) {
-	var content []byte
-	content, err = config.GetRenderedConfFromFile(cfgFilePath)
+func runClient(cfgFilePath string) error {
+	cfg, pxyCfgs, visitorCfgs, err := config.ParseClientConfig(cfgFilePath)
 	if err != nil {
 		return err
 	}
-
-	cfg, err := parseClientCommonCfg(CfgFileTypeIni, content)
-	if err != nil {
-		return err
-	}
-
-	pxyCfgs, visitorCfgs, err := config.LoadAllProxyConfsFromIni(cfg.User, content, cfg.Start)
-	if err != nil {
-		return err
-	}
-
 	return startService(cfg, pxyCfgs, visitorCfgs, cfgFilePath)
 }
 
@@ -290,7 +263,7 @@ func startService(
 	}
 
 	err = svr.Run(cmd)
-	if cfg.Protocol == "kcp" {
+	if err == nil && cfg.Protocol == "kcp" {
 		<-kcpDoneCh
 	}
 	return
