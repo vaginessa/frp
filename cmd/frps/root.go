@@ -105,16 +105,14 @@ var rootCmd = &cobra.Command{
 		var cfg config.ServerCommonConf
 		var err error
 		if cfgFile != "" {
-			log.Info("frps uses config file: %s", cfgFile)
-			var content string
+			var content []byte
 			content, err = config.GetRenderedConfFromFile(cfgFile)
 			if err != nil {
 				return err
 			}
 			cfg, err = parseServerCommonCfg(CfgFileTypeIni, content)
 		} else {
-			log.Info("frps uses command line arguments for config")
-			cfg, err = parseServerCommonCfg(CfgFileTypeCmd, "")
+			cfg, err = parseServerCommonCfg(CfgFileTypeCmd, nil)
 		}
 		if err != nil {
 			return err
@@ -135,29 +133,22 @@ func Execute() {
 	}
 }
 
-func parseServerCommonCfg(fileType int, content string) (cfg config.ServerCommonConf, err error) {
+func parseServerCommonCfg(fileType int, source []byte) (cfg config.ServerCommonConf, err error) {
 	if fileType == CfgFileTypeIni {
-		cfg, err = parseServerCommonCfgFromIni(content)
+		cfg, err = config.UnmarshalServerConfFromIni(source)
 	} else if fileType == CfgFileTypeCmd {
 		cfg, err = parseServerCommonCfgFromCmd()
 	}
 	if err != nil {
 		return
 	}
-
-	err = cfg.Check()
+	cfg.Complete()
+	err = cfg.Validate()
 	if err != nil {
+		err = fmt.Errorf("Parse config error: %v", err)
 		return
 	}
 	return
-}
-
-func parseServerCommonCfgFromIni(content string) (config.ServerCommonConf, error) {
-	cfg, err := config.UnmarshalServerConfFromIni(content)
-	if err != nil {
-		return config.ServerCommonConf{}, err
-	}
-	return cfg, nil
 }
 
 func parseServerCommonCfgFromCmd() (cfg config.ServerCommonConf, err error) {
@@ -198,18 +189,19 @@ func parseServerCommonCfgFromCmd() (cfg config.ServerCommonConf, err error) {
 		}
 	}
 	cfg.MaxPortsPerClient = maxPortsPerClient
-
-	if logFile == "console" {
-		cfg.LogWay = "console"
-	} else {
-		cfg.LogWay = "file"
-	}
 	cfg.DisableLogColor = disableLogColor
 	return
 }
 
 func runServer(cfg config.ServerCommonConf) (err error) {
 	log.InitLog(cfg.LogWay, cfg.LogFile, cfg.LogLevel, cfg.LogMaxDays, cfg.DisableLogColor)
+
+	if cfgFile != "" {
+		log.Info("frps uses config file: %s", cfgFile)
+	} else {
+		log.Info("frps uses command line arguments for config")
+	}
+
 	svr, err := server.NewService(cfg)
 	if err != nil {
 		return err
