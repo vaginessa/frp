@@ -18,7 +18,6 @@ import (
 	"fmt"
 	kcp "github.com/fatedier/kcp-go"
 	"net"
-	"strconv"
 )
 
 type KCPListener struct {

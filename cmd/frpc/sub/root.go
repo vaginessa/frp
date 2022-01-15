@@ -140,18 +140,19 @@ func NewService(cfgFilePath string) (ser *client.Service, err error) {
 }
 
 func returnClient(cfgFilePath string, run bool) (svr *client.Service, err error) {
-	var content string
+	var content []byte
+
 	content, err = config.GetRenderedConfFromFile(cfgFilePath)
 	if err != nil {
-		return
+		return nil, err
 	}
 
 	cfg, err := parseClientCommonCfg(CfgFileTypeIni, content)
 	if err != nil {
-		return
+		return nil, err
 	}
 
-	pxyCfgs, visitorCfgs, err := config.LoadAllConfFromIni(cfg.User, content, cfg.Start)
+	pxyCfgs, visitorCfgs, err := config.LoadAllProxyConfsFromIni(cfg.User, content, cfg.Start)
 	if err != nil {
 		return nil, err
 	}
