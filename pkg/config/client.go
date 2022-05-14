@@ -38,6 +38,11 @@ type ClientCommonConf struct {
 	// ServerPort specifies the port to connect to the server on. By default,
 	// this value is 7000.
 	ServerPort int `ini:"server_port" json:"server_port"`
+	// The maximum amount of time a dial to server will wait for a connect to complete.
+	DialServerTimeout int64 `ini:"dial_server_timeout" json:"dial_server_timeout"`
+	// DialServerKeepAlive specifies the interval between keep-alive probes for an active network connection between frpc and frps.
+	// If negative, keep-alive probes are disabled.
+	DialServerKeepAlive int64 `ini:"dial_server_keepalive" json:"dial_server_keepalive"`
 	// ConnectServerLocalIP specifies the address of the client bind when it connect to server.
 	// By default, this value is empty.
 	// this value only use in TCP/Websocket protocol. Not support in KCP protocol.
@@ -128,7 +133,7 @@ type ClientCommonConf struct {
 	// It only works when "tls_enable" is valid and tls configuration of server
 	// has been specified.
 	TLSTrustedCaFile string `ini:"tls_trusted_ca_file" json:"tls_trusted_ca_file"`
-	// TLSServerName specifices the custom server name of tls certificate. By
+	// TLSServerName specifies the custom server name of tls certificate. By
 	// default, server name if same to ServerAddr.
 	TLSServerName string `ini:"tls_server_name" json:"tls_server_name"`
 	// By default, frpc will connect frps with first custom byte if tls is enabled.
@@ -149,6 +154,9 @@ type ClientCommonConf struct {
 	UDPPacketSize int64 `ini:"udp_packet_size" json:"udp_packet_size"`
 	// Include other config files for proxies.
 	IncludeConfigFiles []string `ini:"includes" json:"includes"`
+	// Enable golang pprof handlers in admin listener.
+	// Admin port must be set first.
+	PprofEnable bool `ini:"pprof_enable" json:"pprof_enable"`
 }
 
 // GetDefaultClientConf returns a client configuration with default values.
@@ -157,6 +165,8 @@ func GetDefaultClientConf() ClientCommonConf {
 		ClientConfig:            auth.GetDefaultClientConf(),
 		ServerAddr:              "0.0.0.0",
 		ServerPort:              7000,
+		DialServerTimeout:       10,
+		DialServerKeepAlive:     7200,
 		HTTPProxy:               os.Getenv("http_proxy"),
 		LogFile:                 "console",
 		LogWay:                  "console",
@@ -185,6 +195,7 @@ func GetDefaultClientConf() ClientCommonConf {
 		Metas:                   make(map[string]string),
 		UDPPacketSize:           1500,
 		IncludeConfigFiles:      make([]string, 0),
+		PprofEnable:             false,
 	}
 }
 
@@ -258,6 +269,8 @@ func UnmarshalClientConfFromIni(source interface{}) (ClientCommonConf, error) {
 	}
 
 	common.Metas = GetMapWithoutPrefix(s.KeysHash(), "meta_")
+	common.ClientConfig.OidcAdditionalEndpointParams = GetMapWithoutPrefix(s.KeysHash(), "oidc_additional_")
+
 	return common, nil
 }
 

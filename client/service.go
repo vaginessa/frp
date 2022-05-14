@@ -17,12 +17,13 @@ package client
 import (
 	"context"
 	"crypto/tls"
-	"errors"
 	"fmt"
 	"io"
+	"math/rand"
 	"net"
 	"runtime"
 	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -34,8 +35,10 @@ import (
 	"github.com/fatedier/frp/pkg/transport"
 	"github.com/fatedier/frp/pkg/util/log"
 	frpNet "github.com/fatedier/frp/pkg/util/net"
+	"github.com/fatedier/frp/pkg/util/util"
 	"github.com/fatedier/frp/pkg/util/version"
 	"github.com/fatedier/frp/pkg/util/xlog"
+	"github.com/fatedier/golib/crypto"
 	libdial "github.com/fatedier/golib/net/dial"
 
 	fmux "github.com/hashicorp/yamux"
@@ -43,6 +46,11 @@ import (
 
 type ServiceClosedListener interface {
 	OnClosed(msg string)
+}
+
+func init() {
+	crypto.DefaultSalt = "frp"
+	rand.Seed(time.Now().UnixNano())
 }
 
 // Service is a client service.
@@ -117,7 +125,22 @@ func (svr *Service) GetController() *Control {
 func (svr *Service) Run(isCmd bool) error {
 	xl := xlog.FromContextSafe(svr.ctx)
 
-	// first login
+	// set custom DNSServer
+	if svr.cfg.DNSServer != "" {
+		dnsAddr := svr.cfg.DNSServer
+		if !strings.Contains(dnsAddr, ":") {
+			dnsAddr += ":53"
+		}
+		// Change default dns server for frpc
+		net.DefaultResolver = &net.Resolver{
+			PreferGo: true,
+			Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
+				return net.Dial("udp", dnsAddr)
+			},
+		}
+	}
+
+	// login to frps
 	for {
 		conn, session, err := svr.login()
 		if err != nil {
@@ -128,7 +151,7 @@ func (svr *Service) Run(isCmd bool) error {
 			if svr.cfg.LoginFailExit {
 				return err
 			}
-			time.Sleep(10 * time.Second)
+			util.RandomSleep(10*time.Second, 0.9, 1.1)
 		} else {
 			// login success
 			ctl := NewControl(svr.ctx, svr.runID, conn, session, svr.cfg, svr.pxyCfgs, svr.visitorCfgs, svr.serverUDPPort, svr.authSetter)
@@ -193,8 +216,11 @@ func (svr *Service) keepControllerWorking() {
 
 		// the first three retry with no delay
 		if reconnectCounts > 3 {
-			time.Sleep(reconnectDelay)
+			util.RandomSleep(reconnectDelay, 0.9, 1.1)
+			xl.Info("wait %v to reconnect", reconnectDelay)
 			reconnectDelay *= 2
+		} else {
+			util.RandomSleep(time.Second, 0, 0.5)
 		}
 		reconnectCounts++
 
@@ -210,18 +236,12 @@ func (svr *Service) keepControllerWorking() {
 			xl.Info("try to reconnect to server...")
 			conn, session, err := svr.login()
 			if err != nil {
-				xl.Warn("reconnect to server error: %v", err)
-				time.Sleep(delayTime)
+				xl.Warn("reconnect to server error: %v, wait %v for another retry", err, delayTime)
+				util.RandomSleep(delayTime, 0.9, 1.1)
 
-				opErr := &net.OpError{}
-				// quick retry for dial error
-				if errors.As(err, &opErr) && opErr.Op == "dial" {
-					delayTime = 2 * time.Second
-				} else {
-					delayTime = delayTime * 2
-					if delayTime > maxDelayTime {
-						delayTime = maxDelayTime
-					}
+				delayTime = delayTime * 2
+				if delayTime > maxDelayTime {
+					delayTime = maxDelayTime
 				}
 				if svr.ReConnectByCount {
 					svr.reConnectCount++
@@ -287,6 +307,8 @@ func (svr *Service) login() (conn net.Conn, session *fmux.Session, err error) {
 	}
 	dialOptions = append(dialOptions,
 		libdial.WithProtocol(protocol),
+		libdial.WithTimeout(time.Duration(svr.cfg.DialServerTimeout)*time.Second),
+		libdial.WithKeepAlive(time.Duration(svr.cfg.DialServerKeepAlive)*time.Second),
 		libdial.WithProxy(proxyType, addr),
 		libdial.WithProxyAuth(auth),
 		libdial.WithTLSConfig(tlsConfig),
@@ -376,7 +398,14 @@ func (svr *Service) ReloadConf(pxyCfgs map[string]config.ProxyConf, visitorCfgs 
 	svr.visitorCfgs = visitorCfgs
 	svr.cfgMu.Unlock()
 
-	return svr.ctl.ReloadConf(pxyCfgs, visitorCfgs)
+	svr.ctlMu.RLock()
+	ctl := svr.ctl
+	svr.ctlMu.RUnlock()
+
+	if ctl != nil {
+		return svr.ctl.ReloadConf(pxyCfgs, visitorCfgs)
+	}
+	return nil
 }
 
 func (svr *Service) Close() {
@@ -385,9 +414,13 @@ func (svr *Service) Close() {
 
 func (svr *Service) GracefulClose(d time.Duration) {
 	atomic.StoreUint32(&svr.exit, 1)
+
+	svr.ctlMu.RLock()
 	if svr.ctl != nil {
 		svr.ctl.GracefulClose(d)
 	}
+	svr.ctlMu.RUnlock()
+
 	svr.cancel()
 	svr.ctl = nil
 }
