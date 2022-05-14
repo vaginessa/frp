@@ -3,8 +3,8 @@ package e2e
 import (
 	"testing"
 
-	"github.com/fatedier/frp/pkg/util/log"
-	"github.com/fatedier/frp/test/e2e/framework"
+	"github.com/HaidyCao/frp_0420/pkg/util/log"
+	"github.com/HaidyCao/frp_0420/test/e2e/framework"
 
 	"github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/config"

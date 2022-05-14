@@ -1,8 +1,8 @@
 package frp
 
 import (
-	"github.com/fatedier/frp/client"
-	"github.com/fatedier/frp/cmd/frpc/sub"
+	"github.com/HaidyCao/frp_0420/client"
+	"github.com/HaidyCao/frp_0420/cmd/frpc/sub"
 	"log"
 )
 

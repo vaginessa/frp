@@ -6,11 +6,11 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/fatedier/frp/test/e2e/framework"
-	"github.com/fatedier/frp/test/e2e/framework/consts"
-	"github.com/fatedier/frp/test/e2e/mock/server/httpserver"
-	"github.com/fatedier/frp/test/e2e/pkg/request"
-	"github.com/fatedier/frp/test/e2e/pkg/utils"
+	"github.com/HaidyCao/frp_0420/test/e2e/framework"
+	"github.com/HaidyCao/frp_0420/test/e2e/framework/consts"
+	"github.com/HaidyCao/frp_0420/test/e2e/mock/server/httpserver"
+	"github.com/HaidyCao/frp_0420/test/e2e/pkg/request"
+	"github.com/HaidyCao/frp_0420/test/e2e/pkg/utils"
 
 	"github.com/gorilla/websocket"
 	. "github.com/onsi/ginkgo"

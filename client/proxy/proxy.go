@@ -25,20 +25,20 @@ import (
 	"sync"
 	"time"
 
-	"github.com/fatedier/frp/pkg/config"
-	"github.com/fatedier/frp/pkg/msg"
-	plugin "github.com/fatedier/frp/pkg/plugin/client"
-	"github.com/fatedier/frp/pkg/proto/udp"
-	"github.com/fatedier/frp/pkg/util/limit"
-	frpNet "github.com/fatedier/frp/pkg/util/net"
-	"github.com/fatedier/frp/pkg/util/xlog"
+	"github.com/HaidyCao/frp_0420/pkg/config"
+	"github.com/HaidyCao/frp_0420/pkg/msg"
+	plugin "github.com/HaidyCao/frp_0420/pkg/plugin/client"
+	"github.com/HaidyCao/frp_0420/pkg/proto/udp"
+	"github.com/HaidyCao/frp_0420/pkg/util/limit"
+	frpNet "github.com/HaidyCao/frp_0420/pkg/util/net"
+	"github.com/HaidyCao/frp_0420/pkg/util/xlog"
 
+	pp "github.com/HaidyCao/go-proxyproto"
 	"github.com/fatedier/golib/errors"
 	frpIo "github.com/fatedier/golib/io"
 	libdial "github.com/fatedier/golib/net/dial"
 	"github.com/fatedier/golib/pool"
 	fmux "github.com/hashicorp/yamux"
-	pp "github.com/pires/go-proxyproto"
 	"golang.org/x/time/rate"
 )
 

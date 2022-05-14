@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/fatedier/frp/test/e2e/framework"
+	"github.com/HaidyCao/frp_0420/test/e2e/framework"
 
 	. "github.com/onsi/ginkgo"
 )

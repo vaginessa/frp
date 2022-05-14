@@ -1,8 +1,9 @@
-module github.com/fatedier/frp
+module github.com/HaidyCao/frp_0420
 
 go 1.16
 
 require (
+	github.com/HaidyCao/go-proxyproto v0.6.2
 	github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5
 	github.com/coreos/go-oidc v2.2.1+incompatible
 	github.com/fatedier/beego v0.0.0-20171024143340-6c6a4f5bd5eb
@@ -16,7 +17,6 @@ require (
 	github.com/leodido/go-urn v1.2.1 // indirect
 	github.com/onsi/ginkgo v1.16.4
 	github.com/onsi/gomega v1.13.0
-	github.com/pires/go-proxyproto v0.6.2
 	github.com/pquerna/cachecontrol v0.0.0-20180517163645-1555304b9b35 // indirect
 	github.com/prometheus/client_golang v1.11.0
 	github.com/rodaine/table v1.0.1

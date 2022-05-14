@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/fatedier/frp/pkg/consts"
+	"github.com/HaidyCao/frp_0420/pkg/consts"
 
 	"gopkg.in/ini.v1"
 )

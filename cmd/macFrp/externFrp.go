@@ -4,8 +4,8 @@ package main
  */
 import "C"
 import (
-	"github.com/fatedier/frp/cmd/frpc/sub"
-	"github.com/fatedier/frp/cmd/frps/frps"
+	"github.com/HaidyCao/frp_0420/cmd/frpc/sub"
+	"github.com/HaidyCao/frp_0420/cmd/frps/frps"
 	"github.com/fatedier/golib/crypto"
 )
 

@@ -6,16 +6,16 @@ import (
 	"net"
 	"net/http"
 
-	"github.com/fatedier/frp/pkg/util/log"
-	"github.com/fatedier/frp/test/e2e/framework"
-	"github.com/fatedier/frp/test/e2e/framework/consts"
-	"github.com/fatedier/frp/test/e2e/mock/server/httpserver"
-	"github.com/fatedier/frp/test/e2e/mock/server/streamserver"
-	"github.com/fatedier/frp/test/e2e/pkg/request"
-	"github.com/fatedier/frp/test/e2e/pkg/rpc"
+	"github.com/HaidyCao/frp_0420/pkg/util/log"
+	"github.com/HaidyCao/frp_0420/test/e2e/framework"
+	"github.com/HaidyCao/frp_0420/test/e2e/framework/consts"
+	"github.com/HaidyCao/frp_0420/test/e2e/mock/server/httpserver"
+	"github.com/HaidyCao/frp_0420/test/e2e/mock/server/streamserver"
+	"github.com/HaidyCao/frp_0420/test/e2e/pkg/request"
+	"github.com/HaidyCao/frp_0420/test/e2e/pkg/rpc"
 
+	pp "github.com/HaidyCao/go-proxyproto"
 	. "github.com/onsi/ginkgo"
-	pp "github.com/pires/go-proxyproto"
 )
 
 var _ = Describe("[Feature: Real IP]", func() {

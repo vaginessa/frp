@@ -28,7 +28,7 @@ import "C"
 import (
 	"time"
 
-	"github.com/fatedier/frp/pkg/util/log"
+	"github.com/HaidyCao/frp_0420/pkg/util/log"
 )
 
 var l logForMacListener

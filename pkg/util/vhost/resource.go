@@ -20,8 +20,8 @@ import (
 	"net/http"
 	"os"
 
-	frpLog "github.com/fatedier/frp/pkg/util/log"
-	"github.com/fatedier/frp/pkg/util/version"
+	frpLog "github.com/HaidyCao/frp_0420/pkg/util/log"
+	"github.com/HaidyCao/frp_0420/pkg/util/version"
 )
 
 var (

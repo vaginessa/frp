@@ -3,8 +3,8 @@ package e2e
 import (
 	"fmt"
 
-	"github.com/fatedier/frp/test/e2e/framework"
-	"github.com/fatedier/frp/test/e2e/framework/consts"
+	"github.com/HaidyCao/frp_0420/test/e2e/framework"
+	"github.com/HaidyCao/frp_0420/test/e2e/framework/consts"
 
 	. "github.com/onsi/ginkgo"
 )

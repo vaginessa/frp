@@ -22,7 +22,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/fatedier/frp/pkg/util/xlog"
+	"github.com/HaidyCao/frp_0420/pkg/util/xlog"
 )
 
 type ContextGetter interface {

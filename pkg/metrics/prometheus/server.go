@@ -1,13 +1,13 @@
 package prometheus
 
 import (
-	"github.com/fatedier/frp/server/metrics"
+	"github.com/HaidyCao/frp_0420/server/metrics"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
 
 const (
-	namespace       = "frp_v0380"
+	namespace       = "frp_v0420"
 	serverSubsystem = "server"
 )
 
