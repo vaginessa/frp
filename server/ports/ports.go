@@ -2,9 +2,8 @@ package ports
 
 import (
 	"errors"
-	"fmt"
 	"net"
-	"strings"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -135,17 +134,9 @@ func (pm *Manager) Acquire(name string, port int) (realPort int, err error) {
 	return
 }
 
-func newAddress(addr string, port int) string {
-	if strings.Contains(addr, ".") {
-		return fmt.Sprintf("%s:%d", addr, port)
-	} else {
-		return fmt.Sprintf("[%s]:%d", addr, port)
-	}
-}
-
 func (pm *Manager) isPortAvailable(port int) bool {
 	if pm.netType == "udp" {
-		addr, err := net.ResolveUDPAddr("udp", newAddress(pm.bindAddr, port))
+		addr, err := net.ResolveUDPAddr("udp", net.JoinHostPort(pm.bindAddr, strconv.Itoa(port)))
 		if err != nil {
 			return false
 		}
@@ -157,7 +148,7 @@ func (pm *Manager) isPortAvailable(port int) bool {
 		return true
 	}
 
-	l, err := net.Listen(pm.netType, newAddress(pm.bindAddr, port))
+	l, err := net.Listen(pm.netType, net.JoinHostPort(pm.bindAddr, strconv.Itoa(port)))
 	if err != nil {
 		return false
 	}
